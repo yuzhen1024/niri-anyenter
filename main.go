@@ -10,7 +10,7 @@ import (
 var launcher = "fuzzel"
 var launcherLockFile = `/run/user/1000/fuzzel-wayland-1.lock`
 var searchMode = true
-var searchModeInputDebounceMs = 500
+var firstInputPressTimming = 300 * time.Millisecond
 var waitNiriStart = true
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	var startKeyeventMonitor = func() {
 		// fmt.Println("start...")
 		if keyeventMonitorState == false {
-			go keyeventMonitor(breakSend, inputResultRec, firstInput)
+			go keyeventMonitor(breakSend, inputResultRec, firstInput, firstInputPressTimming)
 			keyeventMonitorState = true
 		}
 	}

@@ -29,7 +29,7 @@ func (d *Debounce) TryLock() bool {
 	return false
 }
 
-func (d *Debounce) isLock() bool {
+func (d *Debounce) IsLock() bool {
 	return atomic.LoadInt32(&d.state) == 1
 }
 

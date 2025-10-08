@@ -7,6 +7,7 @@ import (
 	"main/utils/keycode"
 	"os"
 	"strings"
+	"time"
 
 	"codeberg.org/msantos/embedexe/exec"
 	"github.com/tidwall/gjson"
@@ -23,18 +24,17 @@ func initPressed() {
 	pressedShift = false
 }
 
-func keyeventMonitor(breakReceive <-chan struct{}, result chan<- string, firstPress chan<- string) {
+func keyeventMonitor(
+	breakReceive <-chan struct{},
+	result chan<- string,
+	firstInput chan<- string,
+	firstInputPressTimming time.Duration,
+) {
 	initPressed()
 	inputs := ""
 
 	// cmd exe, drop 200 ms
 	cmd := exec.Command(bin)
-	// defer func() {
-	// 	fmt.Println("defer...")
-	// 	cmd.Process.Signal(os.Interrupt)
-	// 	cmd.Exe = nil
-	// 	cmd = nil
-	// }()
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Println(err)
@@ -60,10 +60,10 @@ func keyeventMonitor(breakReceive <-chan struct{}, result chan<- string, firstPr
 			break
 		}
 	}()
-	// TODO Active call break
-	// apply to debounce
-	// go func() {}()
 
+	isSendFirstInput := false
+	isSending := false
+	flashSendFirstInput := make(chan struct{})
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		key, ignore := parseKey(strings.Trim(scanner.Text(), "\n"))
@@ -72,14 +72,23 @@ func keyeventMonitor(breakReceive <-chan struct{}, result chan<- string, firstPr
 			continue
 		}
 		// log.Println("begin send", ", inputs: ", inputs, ", len: ", len(inputs))
-		if inputs == "" {
-			firstPress <- key
+		if isSendFirstInput == false {
+			if isSending {
+				flashSendFirstInput <- struct{}{}
+			}
+			isSending = true
+			go func() {
+				select {
+				case <-flashSendFirstInput:
+					return
+				case <-time.After(firstInputPressTimming):
+					isSendFirstInput = false
+					firstInput <- inputs
+				}
+			}()
 		}
 		inputs += key
 	}
-	// fmt.Println("break...")
-	// cmd.Process.Signal(os.Interrupt)
-	// cmd.Process.Kill()
 }
 
 func parseKey(json string) (letter string, ignore bool) {
