@@ -28,11 +28,12 @@ pub fn build(b: *std.Build) void {
     //     }
     // });
 
-    const cmd_run1 = b.addRunArtifact(keyevent_monitor_exe);    // 允许 build run
-    if (b.args) |args| {
-        cmd_run1.addArgs(args);
-    }
-    const build_step = b.step("run-1", "run keyevent-monitor");    // 定义run
-    build_step.dependOn(&cmd_run1.step);
-    build_step.dependOn(b.getInstallStep());
+    // const cmd_run1 = b.addRunArtifact(keyevent_monitor_exe);
+    // if (b.args) |args| {
+    //     cmd_run1.addArgs(args);
+    // }
+    // const build_step = b.step("run-1", "run keyevent-monitor");
+    // const build_step = b.getInstallStep();
+    // build_step.dependOn(&cmd_run1.step);
+    // build_step.dependOn(b.getInstallStep());
 }
