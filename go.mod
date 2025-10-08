@@ -1,4 +1,4 @@
-module main
+module type-allthing-run
 
 go 1.24.6
 

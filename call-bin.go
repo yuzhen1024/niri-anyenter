@@ -4,10 +4,10 @@ import (
 	"bufio"
 	_ "embed"
 	"log"
-	"main/utils/keycode"
 	"os"
 	"strings"
 	"time"
+	"type-allthing-run/utils/keycode"
 
 	"codeberg.org/msantos/embedexe/exec"
 	"github.com/tidwall/gjson"
