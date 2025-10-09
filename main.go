@@ -2,19 +2,47 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
+	"syscall"
 	"time"
 )
 
 var launcher = "fuzzel"
 var launcherLockFile = `/run/user/1000/fuzzel-wayland-1.lock`
+var launcherPreInputFlag = "--search"
 var searchMode = true
 var firstInputPressTimming = 300 * time.Millisecond
 var waitNiriStart = true
+var uid uint32 = 1000
+var gid uint32 = 100
+
+var u, userLookupErr = user.LookupId(fmt.Sprint(uid))
+
+func init() {
+	if userLookupErr != nil {
+		fmt.Println("user lookup error: ", userLookupErr)
+	}
+	getGid, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		log.Panicln("get gui error")
+	}
+	gid = uint32(getGid)
+	// fmt.Println("uid: ", uid, ", gid: ", gid)
+}
 
 func main() {
-	// TODO waitingNiriStart
+	for waitNiriStart {
+		cmd := exec.Command("bash", "-c", `ps -eo comm | grep -w "niri"`)
+		err := cmd.Run()
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second * 3)
+	}
 
 	receiveIPCEvent := make(chan NiriSingle)
 	go ListenNiriIPC(receiveIPCEvent, FirstStart|WorkspaceChange|WindowClose|Overview)
@@ -126,11 +154,23 @@ func callNiriIPCWinFocusNone() {
 }
 
 func runLauncher(searchWord string) {
+
 	args := make([]string, 0)
 	if searchWord != "" {
-		args = append(args, "--search", searchWord)
+		args = append(args, launcherPreInputFlag, searchWord)
 	}
-	if err := exec.Command(launcher, args...).Run(); err != nil {
+	cmd := exec.Command(launcher, args...)
+
+	cmd.Dir = u.HomeDir
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+		Credential: &syscall.Credential{
+			Uid: uid,
+			Gid: gid,
+		},
+	}
+
+	if err := cmd.Run(); err != nil {
 		fmt.Println(err)
 	}
 }
