@@ -35,14 +35,14 @@ func init() {
 }
 
 func main() {
-	for waitNiriStart {
-		cmd := exec.Command("bash", "-c", `ps -eo comm | grep -w "niri"`)
-		err := cmd.Run()
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Second * 3)
-	}
+	// for waitNiriStart {
+	// 	cmd := exec.Command("bash", "-c", `ps -eo comm | grep -w "niri"`)
+	// 	err := cmd.Run()
+	// 	if err == nil {
+	// 		break
+	// 	}
+	// 	time.Sleep(time.Second * 3)
+	// }
 
 	receiveIPCEvent := make(chan NiriSingle)
 	go ListenNiriIPC(receiveIPCEvent, FirstStart|WorkspaceChange|WindowClose|Overview)

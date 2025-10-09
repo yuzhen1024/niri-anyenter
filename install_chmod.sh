@@ -1,3 +1,3 @@
-sudo chgrp input $GOBIN/type-allthing-run
-sudo chmod g+s $GOBIN/type-allthing-run
-sudo setcap cap_setgid+ep $GOBIN/type-allthing-run
+sudo chgrp input $GOBIN/niri-anyenter
+sudo chmod g+s $GOBIN/niri-anyenter
+sudo setcap cap_setgid+ep $GOBIN/niri-anyenter
