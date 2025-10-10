@@ -12,6 +12,7 @@ import (
 )
 
 var u *user.User
+var uid uint32
 var gid uint32
 
 var preinputMode = false
@@ -19,15 +20,20 @@ var uinputMode = false
 
 func init() {
 	var err error
-	u, err = user.LookupId(fmt.Sprint(*uid))
+	u, err = user.Current()
 	if err != nil {
-		fmt.Println("user lookup error: ", err)
+		fmt.Println(err)
 	}
-	getGid, err := strconv.Atoi(u.Gid)
+	uidConv, err := strconv.Atoi(u.Uid)
 	if err != nil {
-		log.Panicln("get gui error")
+		fmt.Println(err)
 	}
-	gid = uint32(getGid)
+	gidConv, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		fmt.Println(err)
+	}
+	uid = uint32(uidConv)
+	gid = uint32(gidConv)
 	// fmt.Println("uid: ", uid, ", gid: ", gid)
 
 	switch *mode {
@@ -154,7 +160,7 @@ func runLauncher(searchWord string) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setsid: true,
 		Credential: &syscall.Credential{
-			Uid: *uid,
+			Uid: uid,
 			Gid: gid,
 		},
 	}
