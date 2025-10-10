@@ -35,15 +35,6 @@ func init() {
 }
 
 func main() {
-	// for waitNiriStart {
-	// 	cmd := exec.Command("bash", "-c", `ps -eo comm | grep -w "niri"`)
-	// 	err := cmd.Run()
-	// 	if err == nil {
-	// 		break
-	// 	}
-	// 	time.Sleep(time.Second * 3)
-	// }
-
 	receiveIPCEvent := make(chan NiriSingle)
 	go ListenNiriIPC(receiveIPCEvent, FirstStart|WorkspaceChange|WindowClose|Overview)
 
@@ -99,22 +90,34 @@ func main() {
 			}
 		}
 	}()
+	// for uinput mode, wip...
 	go func() {
 		for range <-inputResultRec {
 		}
 	}()
 
+	// filter init recive
+	func() {
+		for true {
+			select {
+			case <-time.After(300 * time.Millisecond):
+				return
+			case <-receiveIPCEvent:
+			}
+		}
+	}()
+
 	isLock := false
 	for v := range receiveIPCEvent {
-		// fmt.Println("ev: ", EventMapFeild[v.event], "hasWin: ", v.hasWin)
+		// log.Println("ev: ", EventMapFeild[v.event], "hasWin: ", v.hasWin, ", islock: ", isLock)
 
 		if v.hasWin == false {
 			// when overview close
 			if v.event == Overview {
 				isLock = true
 				go func() {
-					// keyevnet start need 200 ms, 200 + 100 = 300ms
-					time.Sleep(100 * time.Millisecond)
+					// time-be-will = overview-off + bin-start
+					time.Sleep(500 * time.Millisecond)
 					isLock = false
 
 					if hasWin(-1) == false {

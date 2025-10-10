@@ -47,9 +47,10 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		json := scanner.Text()
+		// fmt.Println(json)
 
-		if ev&WorkspaceChange != 0 {
-			result := gjson.Get(json, "WorkspaceActivated")
+		result := gjson.Get(json, "WorkspaceActivated")
+		if ev&WorkspaceChange != 0 && result.Index != 0 {
 			if result.Exists() {
 				ch <- NiriSingle{
 					event:  WorkspaceChange,
@@ -58,8 +59,8 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			}
 		}
 
-		if ev&WindowClose != 0 {
-			result := gjson.Get(json, "WindowClosed")
+		result = gjson.Get(json, "WindowClosed")
+		if ev&WindowClose != 0 && result.Index != 0 {
 			if result.Exists() {
 				ch <- NiriSingle{
 					event:  WindowClose,
@@ -68,9 +69,9 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			}
 		}
 
-		if ev&WindowFocusNull != 0 {
-			result := gjson.Get(json, "WindowFocusChanged.id").Int()
-			if result == 0 {
+		result = gjson.Get(json, "WindowFocusChanged.id")
+		if ev&WindowFocusNull != 0 && result.Index != 0 {
+			if result.Int() == 0 {
 				ch <- NiriSingle{
 					event:  WindowFocusNull,
 					hasWin: hasWin(-1),
@@ -78,21 +79,17 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			}
 		}
 
-		if ev&Overview != 0 {
-			// {"WorkspaceActiveWindowChanged":{"workspace_id":2,"active_window_id":10}}
-			// {"WindowFocusChanged":{"id":10}}
-			// {"WorkspaceActiveWindowChanged":{"workspace_id":2,"active_window_id":1}}
-			result := gjson.Get(json, "OverviewOpenedOrClosed.is_open").Bool()
-			// fmt.Println("overview is_open: ", result)
-			hWin := false
-			if result { // open
-				hWin = true
+		result = gjson.Get(json, "OverviewOpenedOrClosed.is_open")
+		if ev&Overview != 0 && result.Index != 0 {
+			hasWinResult := false
+			if result.Bool() { // open
+				hasWinResult = true
 			} else {
-				hWin = hasWin(-1)
+				hasWinResult = hasWin(-1)
 			}
 			ch <- NiriSingle{
 				event:  Overview,
-				hasWin: hWin,
+				hasWin: hasWinResult,
 			}
 		}
 
