@@ -11,20 +11,25 @@ import (
 	"time"
 )
 
-var launcher = "fuzzel"
-var launcherLockFile = `/run/user/1000/fuzzel-wayland-1.lock`
-var launcherPreInputFlag = "--search"
-var searchMode = true
-var firstInputPressTimming = 300 * time.Millisecond
-var waitNiriStart = true
-var uid uint32 = 1000
-var gid uint32 = 100
+// var launcher = "fuzzel"
+// var launcherLockFile = `/run/user/1000/fuzzel-wayland-1.lock`
+// var launcherPreInputFlag = "--search"
+// var searchMode = true
+// var firstInputPressTimming = 300 * time.Millisecond
+// var uid uint32 = 1000
+// var gid uint32 = 100
 
-var u, userLookupErr = user.LookupId(fmt.Sprint(uid))
+var u *user.User
+var gid uint32
+
+var preinputMode = false
+var uinputMode = false
 
 func init() {
-	if userLookupErr != nil {
-		fmt.Println("user lookup error: ", userLookupErr)
+	var err error
+	u, err = user.LookupId(fmt.Sprint(*uid))
+	if err != nil {
+		fmt.Println("user lookup error: ", err)
 	}
 	getGid, err := strconv.Atoi(u.Gid)
 	if err != nil {
@@ -32,6 +37,13 @@ func init() {
 	}
 	gid = uint32(getGid)
 	// fmt.Println("uid: ", uid, ", gid: ", gid)
+
+	switch *mode {
+	case "preinput":
+		preinputMode = true
+	case "uinput":
+		uinputMode = true
+	}
 }
 
 func main() {
@@ -53,7 +65,7 @@ func main() {
 	var startKeyeventMonitor = func() {
 		// fmt.Println("start...")
 		if keyeventMonitorState == false {
-			go keyeventMonitor(breakSend, inputResultRec, firstInput, firstInputPressTimming)
+			go keyeventMonitor(breakSend, inputResultRec, firstInput, time.Millisecond*time.Duration(*preinputDelay))
 			keyeventMonitorState = true
 		}
 	}
@@ -81,12 +93,14 @@ func main() {
 	go func() {
 		for v := range firstInput {
 			// log.Println("firstInput...")
-			if searchMode {
+			if preinputMode {
 				closeKeyeventMonitor()
 				go runLauncher(v)
 				checkLockFileAndSendEvent()
-			} else {
+			} else if uinputMode {
 				runLauncher("")
+			} else {
+				log.Panicln("bad flag --mode")
 			}
 		}
 	}()
@@ -142,7 +156,7 @@ func main() {
 }
 
 func checkLockFile() bool {
-	_, err := os.Stat(launcherLockFile)
+	_, err := os.Stat(*lockfilePath)
 	// if os.IsNotExist(err) { return false }
 	if err != nil {
 		return false
@@ -160,15 +174,15 @@ func runLauncher(searchWord string) {
 
 	args := make([]string, 0)
 	if searchWord != "" {
-		args = append(args, launcherPreInputFlag, searchWord)
+		args = append(args, *launcherPreinputFlag, searchWord)
 	}
-	cmd := exec.Command(launcher, args...)
+	cmd := exec.Command(*launcher, args...)
 
 	cmd.Dir = u.HomeDir
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setsid: true,
 		Credential: &syscall.Credential{
-			Uid: uid,
+			Uid: *uid,
 			Gid: gid,
 		},
 	}
