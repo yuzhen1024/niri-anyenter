@@ -17,23 +17,21 @@ import (
 var bin []byte
 
 var pressedModifier = make([]int64, 0)
-var pressedShift bool
+var pressedShift = false
 
-func initPressed() {
+func clearPressed() {
 	pressedModifier = make([]int64, 0)
 	pressedShift = false
 }
 
 func keyeventMonitor(
-	breakReceive <-chan struct{},
-	result chan<- string,
-	firstInput chan<- string,
-	firstInputPressTimming time.Duration,
+	returnReceiver <-chan struct{},
+	inputSender chan<- string,
+	inputSendDelay time.Duration,
 ) {
-	initPressed()
+	clearPressed()
 	inputs := ""
 
-	// cmd exe, drop 200 ms
 	cmd := exec.Command(bin)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -42,20 +40,16 @@ func keyeventMonitor(
 	}
 
 	// do not use cmd.Start
-	// this will can not free money
+	// They will can not free money
 	go func() {
-		// fmt.Println("run...")
 		cmd.Run()
 	}()
 
 	var callBreak = func() {
-		// fmt.Println("defer...")
-		/// go for fast
 		go cmd.Process.Signal(os.Interrupt)
-		result <- inputs
 	}
 	go func() {
-		for range breakReceive {
+		for range returnReceiver {
 			callBreak()
 			break
 		}
@@ -67,11 +61,9 @@ func keyeventMonitor(
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		key, ignore := parseKey(strings.Trim(scanner.Text(), "\n"))
-		// fmt.Println("get key: ", key, " isignore: ", ignore)
 		if ignore {
 			continue
 		}
-		// log.Println("begin send", ", inputs: ", inputs, ", len: ", len(inputs))
 		if isSendFirstInput == false {
 			if isSending {
 				flashSendFirstInput <- struct{}{}
@@ -81,9 +73,9 @@ func keyeventMonitor(
 				select {
 				case <-flashSendFirstInput:
 					return
-				case <-time.After(firstInputPressTimming):
+				case <-time.After(inputSendDelay):
 					isSendFirstInput = false
-					firstInput <- inputs
+					inputSender <- inputs
 				}
 			}()
 		}
@@ -92,14 +84,11 @@ func keyeventMonitor(
 }
 
 func parseKey(json string) (letter string, ignore bool) {
-	// fmt.Println("parseKey()...")
 	ignore = true
-	// TODO 组合键缓冲？ 300ms
-	// debunce := debounce.NewDebounce(time.Millisecond * 300)
-	// TODO caps lock
 
 	key := gjson.Get(json, "key").Int()
 	state := gjson.Get(json, "state").Int()
+
 	stateBool := false
 	if state == 1 {
 		stateBool = true
@@ -107,16 +96,16 @@ func parseKey(json string) (letter string, ignore bool) {
 		stateBool = false
 	}
 
-	// lshift rshift
+	// lshift || rshift
 	if key == 42 || key == 54 {
 		pressedShift = stateBool
 		return
 	}
 
+	// TODO caps lock
 	val, ok := keycode.Letters[key]
 	// fmt.Println("val: ", val, " isok: ", ok, " pressedModifier: ", pressedModifier)
 	if ok {
-		// super + w, 完成组合键后，桌面判断 super 已松开
 		for _, v := range pressedModifier {
 			if v != 0 {
 				return
@@ -125,10 +114,12 @@ func parseKey(json string) (letter string, ignore bool) {
 		if stateBool == false {
 			return
 		}
+
 		if pressedShift {
 			return strings.ToUpper(val), false
+		} else {
+			return val, false
 		}
-		return val, false
 	} else {
 		if stateBool {
 			pressedModifier = append(pressedModifier, key)

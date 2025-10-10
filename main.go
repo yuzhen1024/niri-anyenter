@@ -11,14 +11,6 @@ import (
 	"time"
 )
 
-// var launcher = "fuzzel"
-// var launcherLockFile = `/run/user/1000/fuzzel-wayland-1.lock`
-// var launcherPreInputFlag = "--search"
-// var searchMode = true
-// var firstInputPressTimming = 300 * time.Millisecond
-// var uid uint32 = 1000
-// var gid uint32 = 100
-
 var u *user.User
 var gid uint32
 
@@ -51,8 +43,9 @@ func main() {
 	go ListenNiriIPC(receiveIPCEvent, FirstStart|WorkspaceChange|WindowClose|Overview)
 
 	breakSend := make(chan struct{})
-	inputResultRec := make(chan string)
-	firstInput := make(chan string)
+	inputRec := make(chan string)
+	inputDelay := time.Millisecond * time.Duration(*preinputDelay)
+
 	keyeventMonitorState := false
 
 	var closeKeyeventMonitor = func() {
@@ -65,7 +58,7 @@ func main() {
 	var startKeyeventMonitor = func() {
 		// fmt.Println("start...")
 		if keyeventMonitorState == false {
-			go keyeventMonitor(breakSend, inputResultRec, firstInput, time.Millisecond*time.Duration(*preinputDelay))
+			go keyeventMonitor(breakSend, inputRec, inputDelay)
 			keyeventMonitorState = true
 		}
 	}
@@ -76,47 +69,26 @@ func main() {
 			time.Sleep(100 * time.Millisecond)
 
 			if isExisted == false && checkLockFile() == true {
-
 				isExisted = true
 			} else if isExisted == true && checkLockFile() == false {
 				// log.Println("lock file removed...")
 				closeKeyeventMonitor()
 				receiveIPCEvent <- NiriSingle{
 					event:  WindowClose,
-					hasWin: hasWin(-1), // or true
+					hasWin: HasWin(-1), // or true
 				}
 				break
 			}
 		}
 	}
-	// searchMode, when press first key
 	go func() {
-		for v := range firstInput {
-			// log.Println("firstInput...")
+		for v := range inputRec {
 			if preinputMode {
 				closeKeyeventMonitor()
 				go runLauncher(v)
 				checkLockFileAndSendEvent()
-			} else if uinputMode {
-				runLauncher("")
 			} else {
 				log.Panicln("bad flag --mode")
-			}
-		}
-	}()
-	// for uinput mode, wip...
-	go func() {
-		for range <-inputResultRec {
-		}
-	}()
-
-	// filter init recive
-	func() {
-		for true {
-			select {
-			case <-time.After(300 * time.Millisecond):
-				return
-			case <-receiveIPCEvent:
 			}
 		}
 	}()
@@ -130,11 +102,11 @@ func main() {
 			if v.event == Overview {
 				isLock = true
 				go func() {
-					// time-be-will = overview-off + bin-start
+					// overview-off-animation + bin-start-time
 					time.Sleep(500 * time.Millisecond)
 					isLock = false
 
-					if hasWin(-1) == false {
+					if HasWin(-1) == false {
 						startKeyeventMonitor()
 					}
 				}()
@@ -192,6 +164,4 @@ func runLauncher(searchWord string) {
 	}
 }
 
-func typeInput(input string) {
-
-}
+// func typeInput(input string) { }

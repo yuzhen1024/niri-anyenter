@@ -3,29 +3,20 @@ package main
 import (
 	"bufio"
 	"os/exec"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
 
 type Event uint
 
-// TODO map
 const (
 	WorkspaceChange Event = 1 << iota
 	WindowClose
 	FirstStart
-	// {"WindowFocusChanged":{"id":null}}
-	WindowFocusNull
+	WindowFocusNull // {"WindowFocusChanged":{"id":null}}
 	Overview
 )
-
-var EventMapFeild = map[Event]string{ // TODO typeof 更快
-	FirstStart:      "firstStart",
-	WorkspaceChange: "workspace-change",
-	WindowClose:     "window-close",
-	WindowFocusNull: "window-focus-null",
-	Overview:        "overview",
-}
 
 type NiriSingle struct {
 	event  Event
@@ -36,7 +27,7 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 	if ev&FirstStart != 0 {
 		ch <- NiriSingle{
 			event:  FirstStart,
-			hasWin: hasWin(-1),
+			hasWin: HasWin(-1),
 		}
 	}
 
@@ -45,16 +36,23 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 	cmd.Start()
 
 	scanner := bufio.NewScanner(stdout)
+	pass := true
+	time.AfterFunc(300*time.Millisecond, func() {
+		pass = false
+	})
 	for scanner.Scan() {
+		if pass {
+			continue
+		}
+
 		json := scanner.Text()
-		// fmt.Println(json)
 
 		result := gjson.Get(json, "WorkspaceActivated")
 		if ev&WorkspaceChange != 0 && result.Index != 0 {
 			if result.Exists() {
 				ch <- NiriSingle{
 					event:  WorkspaceChange,
-					hasWin: hasWin(result.Get("id").Int()),
+					hasWin: HasWin(result.Get("id").Int()),
 				}
 			}
 		}
@@ -64,7 +62,7 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			if result.Exists() {
 				ch <- NiriSingle{
 					event:  WindowClose,
-					hasWin: hasWin(-1),
+					hasWin: HasWin(-1),
 				}
 			}
 		}
@@ -74,7 +72,7 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			if result.Int() == 0 {
 				ch <- NiriSingle{
 					event:  WindowFocusNull,
-					hasWin: hasWin(-1),
+					hasWin: HasWin(-1),
 				}
 			}
 		}
@@ -85,7 +83,7 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 			if result.Bool() { // open
 				hasWinResult = true
 			} else {
-				hasWinResult = hasWin(-1)
+				hasWinResult = HasWin(-1)
 			}
 			ch <- NiriSingle{
 				event:  Overview,
@@ -97,7 +95,7 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 }
 
 // -1 == null
-func hasWin(wkspcId int64) (result bool) {
+func HasWin(wkspcId int64) (result bool) {
 	if wkspcId < 0 {
 		output, _ := exec.Command("niri", "msg", "--json", "workspaces").CombinedOutput()
 		gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
