@@ -56,10 +56,11 @@ func (v *CoreVar) Run() {
 				go func() {
 					// overview-off-animation + bin-start-time
 					time.Sleep(500 * time.Millisecond)
+					log.Println("overview expect animation is timeout, unlock")
 					isLock = false
 
 					v.ReceiveIPCEvent <- NiriSingle{
-						event:  WindowClose,
+						event:  0,
 						hasWin: HasWin(-1),
 					}
 				}()
@@ -126,8 +127,6 @@ func (v *CoreVar) listenStateAndSendEvent(matching string) {
 	}
 }
 
-// func (v CoreVar)
-
 // Window focus changed: None
 // Window focus changed: Some(52)
 // func callNiriIPCWinFocusNone() {
@@ -147,6 +146,8 @@ func debugIPCEventPrint(sig NiriSingle, isLock bool) {
 		eventname = "FirstStart"
 	} else if sig.event == WindowFocusNull {
 		eventname = "WindowFocusNull"
+	} else {
+		eventname = "Other"
 	}
 	log.Println("ev: ", eventname, "hasWin: ", sig.hasWin, ", islock: ", isLock)
 }

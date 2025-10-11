@@ -11,22 +11,12 @@ var (
 	launcher             = kingpin.Flag("launcher", "launcher, run your apps something, e.g. fuzzel").Default("fuzzel").String()
 	mode                 = kingpin.Flag("mode", "default mode is preinput mode, in future updates include uinput mode(maybe), uinput mode is wip, now only use preinput.").Default("preinput").Enum("preinput")
 	launcherPreinputFlag = kingpin.Flag("preinput-flag", "in empty workspace, type allthing start launcher, now need set preinput whatever in this. for fuzzel is --search, for rofi is -filter, you can --help your using launcher for check.").Default("--search").String()
-	preinputDelay        = kingpin.Flag("preinput-delay-ms", "input anything run launcher, but how quick you type? need this check if you stop typing.").Default("300").Int64()
+	preinputDelay        = kingpin.Flag("preinput-delay-ms", "input anything run launcher, but how quick can you type? need the this value to check if you stopped typing.").Default("300").Int64()
 	// uid                  = kingpin.Flag("uid", "start launcher use uid, it decide your homedir and process uid from").Default("1000").Uint32()
-
-	isCheckLockfile = kingpin.Flag("check-lockfile", "check lockfile for juge launcher open or close, and use --lockfile-path").Default("true").Bool()
-	lockfilePath    = kingpin.Flag("lockfile-path", "use a path like /run/user/1000/fuzzel-wayland-1.lock to jude launcher is open or close, look at --check-lockfile").Default(`/run/user/1000/fuzzel-wayland-1.lock`).String()
-
-	// excludeRule = kingpin.Flag("exclude-rule", `mean juge is has windows for exclude, whilelist, use `+"`niri msg layers`"+` see namespace to check, usage "--whitelist-rule layer=nwg-drawer" "window=Floating\ Window\ -\ Show\ Me\ The\ Key"`).
-	// excludeRule = kingpin.Flag("exclude-rule", ``).
-	// 	// Default().
-	// 	Default("window=Floating Window - Show Me The Key", "layer=nwg-drawer"). //debug
-	// 	Strings()
 
 	excludewindows = kingpin.Flag("exclude-windows", "gnore windows if existing, the windows will not stop run launcher.").Default("Floating Window - Show Me The Key").Strings()
 	excludeLayers  = kingpin.Flag("exclude-layers", "this will stop launcher run, if layers existing.").Default("nwg-drawer").Strings()
-
-	launcherRule = kingpin.Flag("launcher-rule", "use `sleep 3 && niri msg layers` see namespace to check.\nthe fuzzel use layer, the rofi use window, so set you want.").Default("layer=launcher").Strings()
+	launcherRule   = kingpin.Flag("launcher-rule", "use `sleep 3 && niri msg layers` see namespace to check. the fuzzel use layer, the rofi use window, so set you want. default value is `layer=launcer`, fit for fuzzel.").Default("layer=launcher").Strings()
 )
 
 type RuleTypes struct {
@@ -34,7 +24,6 @@ type RuleTypes struct {
 	layer  []string
 }
 
-var excludeRuleParsed RuleTypes
 var launcherRuleParsed RuleTypes
 
 var preinputMode = false

@@ -68,6 +68,9 @@ func KeyeventMonitor(
 	for scanner.Scan() {
 		key, ignore := parseKey(strings.Trim(scanner.Text(), "\n"))
 		if ignore {
+			if (len(pressedModifier) == 0 && pressedShift == false) == false {
+				flashSendFirstInput <- struct{}{}
+			}
 			continue
 		}
 		if isSendFirstInput == false {
