@@ -1,4 +1,4 @@
-package main
+package bin
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//go:embed bin/keyevent-monitor
+//go:embed keyevent-monitor
 var bin []byte
 
 var pressedModifier = make([]int64, 0)
@@ -24,13 +24,12 @@ func clearPressed() {
 	pressedShift = false
 }
 
-func keyeventMonitor(
+func KeyeventMonitor(
 	returnReceiver <-chan struct{},
 	inputSender chan<- string,
 	inputSendDelay time.Duration,
 ) {
 	clearPressed()
-	inputs := ""
 
 	cmd := exec.Command(bin)
 	stdout, err := cmd.StdoutPipe()
@@ -45,11 +44,18 @@ func keyeventMonitor(
 		cmd.Run()
 	}()
 
+	inputs := ""
+	isBreak := false
+
 	var callBreak = func() {
 		go cmd.Process.Signal(os.Interrupt)
+		log.Println("closed keyevent-monitor...")
+		// go cmd.Process.Signal(os.Kill)
 	}
 	go func() {
 		for range returnReceiver {
+			log.Println("begin close keyevent-monitor...")
+			isBreak = true
 			callBreak()
 			break
 		}
@@ -74,8 +80,10 @@ func keyeventMonitor(
 				case <-flashSendFirstInput:
 					return
 				case <-time.After(inputSendDelay):
-					isSendFirstInput = false
-					inputSender <- inputs
+					if isBreak == false {
+						isSendFirstInput = false
+						inputSender <- inputs
+					}
 				}
 			}()
 		}

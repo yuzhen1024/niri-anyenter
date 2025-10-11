@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"bufio"
@@ -92,29 +92,4 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 		}
 
 	}
-}
-
-// -1 == null
-func HasWin(wkspcId int64) (result bool) {
-	if wkspcId < 0 {
-		output, _ := exec.Command("niri", "msg", "--json", "workspaces").CombinedOutput()
-		gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
-			if gjson.Get(value.Raw, "is_active").Bool() {
-				id := gjson.Get(value.Raw, "id")
-				wkspcId = id.Int()
-				return false
-			}
-			return true
-		})
-	}
-	output, _ := exec.Command("niri", "msg", "--json", "windows").CombinedOutput()
-	gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
-		id := gjson.Get(value.Raw, "workspace_id").Int()
-		if id == wkspcId {
-			result = true
-			return false
-		}
-		return true
-	})
-	return
 }
