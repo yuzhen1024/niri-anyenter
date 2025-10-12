@@ -15,8 +15,8 @@ var (
 	preinputDelay        = kingpin.Flag("preinput-delay-ms", "input anything run launcher, but how quick can you type? need the this value to check if you stopped typing.").Default("400").Int64()
 	// uid                  = kingpin.Flag("uid", "start launcher use uid, it decide your homedir and process uid from").Default("1000").Uint32()
 
-	// excludewindows = kingpin.Flag("exclude-windows", `gnore windows if existing, the windows will not stop run launcher. example: --exclude-windows "app1" "app2" ...`).Default("Floating Window - Show Me The Key").Strings()
-	excludewindows = kingpin.Flag("exclude-windows", `gnore windows if existing, the windows will not stop run launcher. example: --exclude-windows "app1" "app2" ...`).Default("").Strings()
+	// excludewindows = kingpin.Flag("exclude-windows", `ignore windows if existing, the windows will not stop run launcher. example: --exclude-windows "app1" "app2" ...`).Default("Floating Window - Show Me The Key").Strings()
+	excludewindows = kingpin.Flag("exclude-windows", `ignore windows if existing, the windows will not stop run launcher. example: --exclude-windows "app1" "app2" ...`).Default("").Strings()
 	excludeLayers  = kingpin.Flag("exclude-layers", `this will stop launcher run, if layers existing. example: --exclude-layers "app1" "app2" ...`).Default("nwg-drawer").Strings()
 	launcherRule   = kingpin.Flag("launcher-rule", `use `+"`sleep 3 && niri msg layers`"+`see namespace to check. the fuzzel use layer, the rofi use window, so, set you want. default value is `+"`layer=launcher`"+`, fit for fuzzel.`).Default("layer=launcher").String()
 )
