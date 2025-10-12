@@ -1,7 +1,11 @@
 ## install
 
-`go install github.com/yuzhen1024/niri-anyenter`
-
+```bash
+go install github.com/yuzhen1024/niri-anyenter
+sudo chgrp input $GOBIN/niri-anyenter
+sudo chmod g+s $GOBIN/niri-anyenter
+sudo setcap cap_setgid+ep $GOBIN/niri-anyenter
+```
 
 ## build install
 
