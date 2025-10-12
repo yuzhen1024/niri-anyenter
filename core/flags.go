@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	launcher             = kingpin.Flag("launcher", "launcher, run your apps something, e.g. fuzzel").Default("fuzzel").String()
+	launcher             = kingpin.Flag("launcher", "launcher or runner, run your apps, e.g. fuzzel").Default("fuzzel").String()
 	mode                 = kingpin.Flag("mode", "default mode is preinput mode, in future updates include uinput mode(maybe), uinput mode is wip, now only use preinput.").Default("preinput").Enum("preinput")
 	launcherPreinputFlag = kingpin.Flag("preinput-flag", "in empty workspace, type allthing start launcher, now need set preinput whatever in this. for fuzzel is --search, for rofi is -filter, you can --help your using launcher for check.").Default("--search").String()
 	preinputDelay        = kingpin.Flag("preinput-delay-ms", "input anything run launcher, but how quick can you type? need the this value to check if you stopped typing.").Default("300").Int64()

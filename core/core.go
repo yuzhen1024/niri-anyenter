@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"log"
-	"niri-anyenter/bin"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func Create() *CoreVar {
 }
 
 func (v *CoreVar) Run() {
-	go ListenNiriIPC(v.ReceiveIPCEvent, FirstStart|WorkspaceChange|WindowClose|Overview)
+	go ListenNiriIPC(v.ReceiveIPCEvent, make(<-chan struct{}), FirstStart|WorkspaceChange|WindowClose|Overview)
 
 	go func() {
 		for input := range v.InputRec {
@@ -93,7 +92,32 @@ func (v *CoreVar) startKeyeventMonitor() {
 	fmt.Println("start...", " state: ", v.KeyeventMonitorState)
 	if v.KeyeventMonitorState == false {
 		v.KeyeventMonitorState = true
-		go bin.KeyeventMonitor(v.BreakSend, v.InputRec, v.InputDelay)
+		go KeyeventMonitor(v.BreakSend, v.InputRec, v.InputDelay)
+		go v.windowDemain()
+	}
+}
+
+// some time, you pressed hotkey open the app,
+// niri-ipc is not send signel to event-stream
+func (v *CoreVar) windowDemain() {
+	nirisig := make(chan NiriSingle)
+	exit := make(chan struct{})
+	go ListenNiriIPC(nirisig, exit, WorkspaceChange|WindowFocusNull)
+	for true {
+		time.Sleep(10 * time.Millisecond)
+		select {
+		case <-nirisig:
+			exit <- struct{}{}
+			return
+		default:
+			if HasWin(-1) {
+				v.ReceiveIPCEvent <- NiriSingle{
+					event:  0,
+					hasWin: true,
+				}
+				return
+			}
+		}
 	}
 }
 

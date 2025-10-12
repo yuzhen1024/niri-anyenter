@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"os"
 	"os/exec"
 	"time"
 
@@ -23,7 +24,7 @@ type NiriSingle struct {
 	hasWin bool
 }
 
-func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
+func ListenNiriIPC(ch chan<- NiriSingle, exit <-chan struct{}, ev Event) {
 	if ev&FirstStart != 0 {
 		ch <- NiriSingle{
 			event:  FirstStart,
@@ -33,7 +34,16 @@ func ListenNiriIPC(ch chan<- NiriSingle, ev Event) {
 
 	cmd := exec.Command("niri", "msg", "--json", "event-stream")
 	stdout, _ := cmd.StdoutPipe()
-	cmd.Start()
+
+	// cmd.Start()
+	go func() {
+		cmd.Run()
+	}()
+	go func() {
+		for range exit {
+			cmd.Process.Signal(os.Interrupt)
+		}
+	}()
 
 	scanner := bufio.NewScanner(stdout)
 	pass := true

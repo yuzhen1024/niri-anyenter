@@ -1,9 +1,10 @@
-package bin
+package core
 
 import (
 	"bufio"
 	_ "embed"
 	"log"
+	"niri-anyenter/bin"
 	"niri-anyenter/utils/keycode"
 	"os"
 	"strings"
@@ -12,9 +13,6 @@ import (
 	"codeberg.org/msantos/embedexe/exec"
 	"github.com/tidwall/gjson"
 )
-
-//go:embed keyevent-monitor
-var bin []byte
 
 var pressedModifier = make([]int64, 0)
 var pressedShift = false
@@ -31,7 +29,7 @@ func KeyeventMonitor(
 ) {
 	clearPressed()
 
-	cmd := exec.Command(bin)
+	cmd := exec.Command(bin.KemBin)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Println(err)
@@ -62,30 +60,56 @@ func KeyeventMonitor(
 	}()
 
 	isSendFirstInput := false
+
 	isSending := false
-	flashSendFirstInput := make(chan struct{})
+	flashSendInput := make(chan struct{})
+
+	// isPressingModifier := false
+	// flashModifier := make(chan struct{})
+
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
-		key, ignore := parseKey(strings.Trim(scanner.Text(), "\n"))
+		key, ignore := parseKey(scanner.Text())
 		if ignore {
-			if (len(pressedModifier) == 0 && pressedShift == false) == false {
-				flashSendFirstInput <- struct{}{}
+			// if (len(pressedModifier) == 0 && pressedShift == false) == false {
+			if len(pressedModifier) != 0 {
+				if isSending {
+					flashSendInput <- struct{}{}
+					isSending = false
+					inputs = ""
+				}
+				// if isPressingModifier {
+				// 	flashModifier <- struct{}{}
+				// }
+				// isPressingModifier = true
+				// go func() {
+				// 	select {
+				// 	case <-flashModifier:
+				// 		return
+				// 	case <-time.After(inputSendDelay):
+				// 		isPressingModifier = false
+				// 	}
+				// }()
 			}
 			continue
 		}
+		// if isPressingModifier {
+		// 	continue
+		// }
 		if isSendFirstInput == false {
 			if isSending {
-				flashSendFirstInput <- struct{}{}
+				flashSendInput <- struct{}{}
 			}
 			isSending = true
 			go func() {
 				select {
-				case <-flashSendFirstInput:
+				case <-flashSendInput:
 					return
 				case <-time.After(inputSendDelay):
 					if isBreak == false {
-						isSendFirstInput = false
 						inputSender <- inputs
+						isSendFirstInput = true
+						isSending = false
 					}
 				}
 			}()
@@ -117,11 +141,10 @@ func parseKey(json string) (letter string, ignore bool) {
 	val, ok := keycode.Letters[key]
 	// fmt.Println("val: ", val, " isok: ", ok, " pressedModifier: ", pressedModifier)
 	if ok {
-		for _, v := range pressedModifier {
-			if v != 0 {
-				return
-			}
+		for range pressedModifier {
+			return
 		}
+		// unpress
 		if stateBool == false {
 			return
 		}
@@ -135,7 +158,7 @@ func parseKey(json string) (letter string, ignore bool) {
 		if stateBool {
 			pressedModifier = append(pressedModifier, key)
 		} else {
-			temp := make([]int64, len(pressedModifier))
+			temp := make([]int64, 0)
 			for _, v := range pressedModifier {
 				if v == key {
 					continue
