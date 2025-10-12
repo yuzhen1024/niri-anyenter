@@ -22,6 +22,7 @@ const (
 type NiriSingle struct {
 	event  Event
 	hasWin bool
+	json   string
 }
 
 func ListenNiriIPC(ch chan<- NiriSingle, exit <-chan struct{}, ev Event) {
@@ -89,15 +90,10 @@ func ListenNiriIPC(ch chan<- NiriSingle, exit <-chan struct{}, ev Event) {
 
 		result = gjson.Get(json, "OverviewOpenedOrClosed.is_open")
 		if ev&Overview != 0 && result.Index != 0 {
-			hasWinResult := false
-			if result.Bool() { // open
-				hasWinResult = true
-			} else {
-				hasWinResult = HasWin(-1)
-			}
 			ch <- NiriSingle{
 				event:  Overview,
-				hasWin: hasWinResult,
+				hasWin: HasWin(-1),
+				json:   json,
 			}
 		}
 

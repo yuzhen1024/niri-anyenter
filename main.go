@@ -1,7 +1,7 @@
 package main
 
 import (
-	"niri-anyenter/core"
+	"github.com/yuzhen1024/niri-anyenter/core"
 )
 
 func main() {

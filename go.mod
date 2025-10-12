@@ -1,4 +1,4 @@
-module niri-anyenter
+module github.com/yuzhen1024/niri-anyenter
 
 go 1.24.6
 

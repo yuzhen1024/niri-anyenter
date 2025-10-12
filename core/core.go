@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
 
 type CoreVar struct {
@@ -48,13 +50,14 @@ func (v *CoreVar) Run() {
 	for sig := range v.ReceiveIPCEvent {
 		debugIPCEventPrint(sig, isLock)
 
-		if sig.hasWin == false {
-			// when overview close
-			if sig.event == Overview {
-				isLock = true
+		if sig.event == Overview {
+			isLock = true
+			result := gjson.Get(sig.json, "OverviewOpenedOrClosed.is_open").Bool()
+			// when overview close, hotkey is break, so it can effect a-z key
+			if result == false {
 				go func() {
 					// overview-off-animation + bin-start-time
-					time.Sleep(500 * time.Millisecond)
+					time.Sleep(200 * time.Millisecond)
 					log.Println("overview expect animation is timeout, unlock")
 					isLock = false
 
@@ -63,18 +66,18 @@ func (v *CoreVar) Run() {
 						hasWin: HasWin(-1),
 					}
 				}()
-				continue
 			} else {
-				if isLock {
-					continue
-				}
-				v.startKeyeventMonitor()
+				v.closeKeyeventMonitor()
 			}
+			continue
+		}
 
-		} else {
-			if sig.event == Overview {
-				isLock = true
+		if sig.hasWin == false {
+			if isLock {
+				continue
 			}
+			v.startKeyeventMonitor()
+		} else {
 			v.closeKeyeventMonitor()
 		}
 	}
@@ -102,9 +105,9 @@ func (v *CoreVar) startKeyeventMonitor() {
 func (v *CoreVar) windowDemain() {
 	nirisig := make(chan NiriSingle)
 	exit := make(chan struct{})
-	go ListenNiriIPC(nirisig, exit, WorkspaceChange|WindowFocusNull)
+	go ListenNiriIPC(nirisig, exit, WorkspaceChange|WindowFocusNull|Overview)
 	for true {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		select {
 		case <-nirisig:
 			exit <- struct{}{}

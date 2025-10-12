@@ -4,11 +4,12 @@ import (
 	"bufio"
 	_ "embed"
 	"log"
-	"niri-anyenter/bin"
-	"niri-anyenter/utils/keycode"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/yuzhen1024/niri-anyenter/bin"
+	"github.com/yuzhen1024/niri-anyenter/utils/keycode"
 
 	"codeberg.org/msantos/embedexe/exec"
 	"github.com/tidwall/gjson"
