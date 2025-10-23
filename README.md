@@ -1,3 +1,6 @@
+
+Multi-screen support is not yet available
+
 ## install
 
 ```bash
