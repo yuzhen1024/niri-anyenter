@@ -1,11 +1,14 @@
 package core
 
 import (
+	"fmt"
 	"os/exec"
 	"slices"
 
 	"github.com/tidwall/gjson"
 )
+
+// TODO *exclude... parts of code, move to other place
 
 // -1 == null
 func HasWin(wkspcId int64) (result bool) {
@@ -15,8 +18,11 @@ func HasWin(wkspcId int64) (result bool) {
 	}
 
 	output, _ := exec.Command("niri", "msg", "--json", "windows").CombinedOutput()
+
 	gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
+
 		id := gjson.Get(value.Raw, "workspace_id").Int()
+
 		if id == wkspcId {
 			if slices.Contains(
 				*excludewindows,
@@ -28,11 +34,19 @@ func HasWin(wkspcId int64) (result bool) {
 		}
 		return true
 	})
+
 	return
 }
 
 func getCurrentWorkspaceID() (wkspcId int64) {
-	output, _ := exec.Command("niri", "msg", "--json", "workspaces").CombinedOutput()
+	// for multipie monitor, and more fast get value
+	output, _ := exec.Command("niri", "msg", "--json", "focused-window").CombinedOutput()
+	focusedWorkspace := gjson.GetBytes(output, "workspace_id")
+	if focusedWorkspace.Index != 0 {
+		return focusedWorkspace.Int()
+	}
+
+	output, _ = exec.Command("niri", "msg", "--json", "workspaces").CombinedOutput()
 	gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
 		if gjson.Get(value.Raw, "is_active").Bool() {
 			id := gjson.Get(value.Raw, "id")
@@ -83,6 +97,7 @@ func MatchExcludeLayer() string {
 	output, _ := exec.Command("niri", "msg", "--json", "layers").CombinedOutput()
 	gjson.ParseBytes(output).ForEach(func(key, value gjson.Result) bool {
 		name := gjson.Get(value.Raw, "namespace").String()
+		fmt.Println("debug: name: ", name)
 		if slices.Contains(*excludeLayers, name) {
 			result = name
 			return false

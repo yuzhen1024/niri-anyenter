@@ -58,42 +58,58 @@ func ListenNiriIPC(ch chan<- NiriSingle, exit <-chan struct{}, ev Event) {
 
 		json := scanner.Text()
 
-		result := gjson.Get(json, "WorkspaceActivated")
-		if ev&WorkspaceChange != 0 && result.Index != 0 {
-			if result.Exists() {
-				ch <- NiriSingle{
-					event:  WorkspaceChange,
-					hasWin: HasWin(result.Get("id").Int()),
+		if ev&WorkspaceChange != 0 {
+			result := gjson.Get(json, "WorkspaceActivated")
+			if result.Index != 0 {
+
+				if result.Exists() {
+					ch <- NiriSingle{
+						event:  WorkspaceChange,
+						hasWin: HasWin(result.Get("id").Int()),
+					}
 				}
+
 			}
 		}
 
-		result = gjson.Get(json, "WindowClosed")
-		if ev&WindowClose != 0 && result.Index != 0 {
-			if result.Exists() {
+		if ev&WindowClose != 0 {
+			result := gjson.Get(json, "WindowClosed")
+			if result.Index != 0 {
+
+				if result.Exists() {
+					ch <- NiriSingle{
+						event:  WindowClose,
+						hasWin: HasWin(-1),
+					}
+				}
+
+			}
+		}
+
+		if ev&WindowFocusNull != 0 {
+			result := gjson.Get(json, "WindowFocusChanged.id")
+			if result.Index != 0 {
+
+				if result.Int() == 0 {
+					ch <- NiriSingle{
+						event:  WindowFocusNull,
+						hasWin: HasWin(-1),
+					}
+				}
+
+			}
+		}
+
+		if ev&Overview != 0 {
+			result := gjson.Get(json, "OverviewOpenedOrClosed.is_open")
+			if result.Index != 0 {
+
 				ch <- NiriSingle{
-					event:  WindowClose,
+					event:  Overview,
 					hasWin: HasWin(-1),
+					json:   json,
 				}
-			}
-		}
 
-		result = gjson.Get(json, "WindowFocusChanged.id")
-		if ev&WindowFocusNull != 0 && result.Index != 0 {
-			if result.Int() == 0 {
-				ch <- NiriSingle{
-					event:  WindowFocusNull,
-					hasWin: HasWin(-1),
-				}
-			}
-		}
-
-		result = gjson.Get(json, "OverviewOpenedOrClosed.is_open")
-		if ev&Overview != 0 && result.Index != 0 {
-			ch <- NiriSingle{
-				event:  Overview,
-				hasWin: HasWin(-1),
-				json:   json,
 			}
 		}
 
