@@ -110,7 +110,7 @@ func (v *CoreVar) windowDemain() {
 	done := make(chan struct{})
 	go func() {
 		for true {
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			if HasWin(-1) {
 				break
 			}

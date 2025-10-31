@@ -51,7 +51,6 @@ pub fn main() !void {
                 const keyevent = c.libinput_event_get_keyboard_event(event);
                 const keycode = c.libinput_event_keyboard_get_key(keyevent);
                 const state = c.libinput_event_keyboard_get_key_state(keyevent);
-                // pushKeyEvent(keycode, state);
                 try output(keycode, state);
             }
 
