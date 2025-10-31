@@ -41,9 +41,8 @@ func ListenNiriIPC(ch chan<- NiriSingle, exit <-chan struct{}, ev Event) {
 		cmd.Run()
 	}()
 	go func() {
-		for range exit {
-			cmd.Process.Signal(os.Interrupt)
-		}
+		<-exit
+		cmd.Process.Signal(os.Interrupt)
 	}()
 
 	scanner := bufio.NewScanner(stdout)

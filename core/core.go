@@ -100,27 +100,34 @@ func (v *CoreVar) startKeyeventMonitor() {
 	}
 }
 
-// some time, you pressed hotkey open the app,
-// niri-ipc is not send signel to event-stream
 func (v *CoreVar) windowDemain() {
 	nirisig := make(chan NiriSingle)
 	exit := make(chan struct{})
 	go ListenNiriIPC(nirisig, exit, WorkspaceChange|WindowFocusNull|Overview)
-	for true {
-		time.Sleep(50 * time.Millisecond)
-		select {
-		case <-nirisig:
-			exit <- struct{}{}
-			return
-		default:
+
+	// some time, you pressed hotkey open the app,
+	// niri-ipc is not send signel to event-stream
+	done := make(chan struct{})
+	go func() {
+		for true {
+			time.Sleep(50 * time.Millisecond)
 			if HasWin(-1) {
-				v.ReceiveIPCEvent <- NiriSingle{
-					event:  0,
-					hasWin: true,
-				}
-				return
+				break
 			}
 		}
+		close(done)
+	}()
+
+	select {
+	case <-nirisig:
+		close(exit)
+
+	case <-done:
+		v.ReceiveIPCEvent <- NiriSingle{
+			event:  0,
+			hasWin: true,
+		}
+		close(exit)
 	}
 }
 
